@@ -59,9 +59,9 @@ DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in enviro
 
 
 # MongoDB information
-DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://shivushegde:shivu2006@cluster0.ebe65ei.mongodb.net/?retryWrites=true&w=majority
+DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://shivaprasadshegde06:FsvKlFtp9BcnOdoO@cluster0.6tsqp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 ")   # IF Multiple Database Is False Then Fill Only This Database Url.
-DATABASE_NAME = environ.get('DATABASE_NAME', "Cluster3")
+DATABASE_NAME = environ.get('DATABASE_NAME', "Cluster0")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'vjcollection')
 
 MULTIPLE_DATABASE = bool(environ.get('MULTIPLE_DATABASE', False)) # Set True or False
@@ -119,10 +119,10 @@ VERIFY_SHORTLINK_API = environ.get('VERIFY_SHORTLINK_API', '5cf3abda94423eb92455
 VERIFY_TUTORIAL = environ.get('VERIFY_TUTORIAL', 'https://t.me/bshowtodownload/12')
 
 # If You Fill Second Shortner Then Bot Attach Both First And Second Shortner And Use It For Verify.
-VERIFY_SECOND_SHORTNER = bool(environ.get('VERIFY_SECOND_SHORTNER', False))
+VERIFY_SECOND_SHORTNER = bool(environ.get('VERIFY_SECOND_SHORTNER', True))
 # if verify second shortner is True then fill below url and api
-VERIFY_SND_SHORTLINK_URL = environ.get('VERIFY_SND_SHORTLINK_URL', '')
-VERIFY_SND_SHORTLINK_API = environ.get('VERIFY_SND_SHORTLINK_API', '')
+VERIFY_SND_SHORTLINK_URL = environ.get('VERIFY_SND_SHORTLINK_URL', 'runurl.in')
+VERIFY_SND_SHORTLINK_API = environ.get('VERIFY_SND_SHORTLINK_API', '5cf3abda94423eb924557ad5ffa4d5b6bb32b2c0')
 
 
 # Shortlink Info
