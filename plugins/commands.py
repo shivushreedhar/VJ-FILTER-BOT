@@ -1502,3 +1502,27 @@ async def purge_requests(client, message):
             parse_mode=enums.ParseMode.MARKDOWN,
             disable_web_page_preview=True
         )
+from pyrogram import Client, filters
+
+# Replace with the actual owner ID
+OWNER_ID = 5536032493  # Change this to your actual Telegram ID
+
+@Client.on_message(filters.command("request") & filters.private)
+async def request_movie(client, message):
+    if len(message.command) < 2:
+        await message.reply_text("Please specify a movie name.\n\nExample: `/request Inception`", quote=True)
+        return
+    
+    movie_name = " ".join(message.command[1:])
+    user = message.from_user
+
+    # Message to send to owner
+    request_text = f"📌 *New Movie Request*\n\n👤 *User:* {user.first_name} (@{user.username})\n🎬 *Movie:* {movie_name}"
+    
+    try:
+        # Sending the request to the bot owner
+        await client.send_message(OWNER_ID, request_text)
+        await message.reply_text("✅ Your request has been sent to the owner!", quote=True)
+    except Exception as e:
+        await message.reply_text("❌ Failed to send your request. Please try again later.", quote=True)
+        print(f"Error sending request: {e}")
