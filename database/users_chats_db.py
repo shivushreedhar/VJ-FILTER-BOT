@@ -329,3 +329,40 @@ def log_user_action(user_id: int, action: str, timestamp: str):
 
     conn.commit()
     conn.close()
+import sqlite3
+
+class Database:
+    def __init__(self, db_path="bot_database.db"):
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.cursor = self.conn.cursor()
+        self.cursor.execute(
+            """CREATE TABLE IF NOT EXISTS warnings (
+                user_id INTEGER PRIMARY KEY,
+                count INTEGER DEFAULT 0
+            )"""
+        )
+        self.conn.commit()
+
+    def get_warnings(self, user_id: int):
+        """Retrieve the number of warnings for a user."""
+        self.cursor.execute("SELECT count FROM warnings WHERE user_id = ?", (user_id,))
+        result = self.cursor.fetchone()
+        return result[0] if result else 0  # Return warning count or 0 if no entry
+
+    def add_warning(self, user_id: int):
+        """Increase the warning count for a user."""
+        current_warnings = self.get_warnings(user_id)
+        if current_warnings == 0:
+            self.cursor.execute("INSERT INTO warnings (user_id, count) VALUES (?, 1)", (user_id,))
+        else:
+            self.cursor.execute("UPDATE warnings SET count = count + 1 WHERE user_id = ?", (user_id,))
+        self.conn.commit()
+
+    def reset_warnings(self, user_id: int):
+        """Reset warnings for a user."""
+        self.cursor.execute("DELETE FROM warnings WHERE user_id = ?", (user_id,))
+        self.conn.commit()
+
+
+# Initialize database object
+db = Database()
