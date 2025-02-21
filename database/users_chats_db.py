@@ -309,3 +309,23 @@ class Database:
     
 
 db = Database(USER_DB_URI, DATABASE_NAME)
+import sqlite3
+
+def log_user_action(user_id: int, action: str, timestamp: str):
+    conn = sqlite3.connect("bot_database.db")  # Change to your actual DB name
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action TEXT,
+            timestamp TEXT
+        )
+    """)
+
+    cursor.execute("INSERT INTO user_logs (user_id, action, timestamp) VALUES (?, ?, ?)",
+                   (user_id, action, timestamp))
+
+    conn.commit()
+    conn.close()
