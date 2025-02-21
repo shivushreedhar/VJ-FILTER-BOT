@@ -1522,7 +1522,137 @@ async def request_movie(client, message):
     try:
         # Sending the request to the bot owner
         await client.send_message(OWNER_ID, request_text)
-        await message.reply_text("✅ Your request has been sent to the owner!", quote=True)
+        await message.reply_text("✅ Your request has been sent to the owner!, He Will add soon.", quote=True)
     except Exception as e:
         await message.reply_text("❌ Failed to send your request. Please try again later.", quote=True)
         print(f"Error sending request: {e}")
+import asyncio, logging
+from pyrogram import Client, filters, enums
+from pyrogram.types import ChatPermissions
+from database.users_chats_db import db, log_user_action, get_warnings, add_warning, reset_warnings
+from info import OWNER_ID, LOG_CHANNEL, SUPPORT_CHAT, WELCOME_MESSAGE, MAX_WARNINGS
+
+logger = logging.getLogger(__name__)
+
+# ➜ 1. MODERATION COMMANDS
+@Client.on_message(filters.command("warn") & filters.group)
+async def warn_user(client, message):
+    if not message.reply_to_message:
+        return await message.reply_text("Reply to a user to warn them!")
+    user_id = message.reply_to_message.from_user.id
+    warnings = await get_warnings(message.chat.id, user_id)
+    
+    if warnings + 1 >= MAX_WARNINGS:
+        await client.kick_chat_member(message.chat.id, user_id)
+        await message.reply_text(f"{message.reply_to_message.from_user.mention} was kicked due to too many warnings! 🚨")
+        await log_user_action(message.chat.id, user_id, "Kicked due to warnings")
+    else:
+        await add_warning(message.chat.id, user_id)
+        await message.reply_text(f"⚠ Warning {warnings + 1}/{MAX_WARNINGS} for {message.reply_to_message.from_user.mention}")
+
+@Client.on_message(filters.command("kick") & filters.group)
+async def kick_user(client, message):
+    if not message.reply_to_message:
+        return await message.reply_text("Reply to a user to kick them!")
+    user_id = message.reply_to_message.from_user.id
+    await client.kick_chat_member(message.chat.id, user_id)
+    await message.reply_text(f"Kicked {message.reply_to_message.from_user.mention} 🚪")
+    await log_user_action(message.chat.id, user_id, "Kicked")
+
+# ➜ 2. BAN ENTIRE GROUP COMMAND
+@Client.on_message(filters.command("bangroup") & filters.group)
+async def ban_group(client, message):
+    if len(message.command) < 2:
+        return await message.reply_text("Usage: /bangroup ban|unban")
+
+    mode = message.command[1].lower()
+    chat_id = message.chat.id
+
+    if mode == "ban":
+        members = await client.get_chat_members(chat_id)
+        banned_users = 0
+
+        for member in members:
+            if member.user and not member.user.is_bot:
+                try:
+                    await client.ban_chat_member(chat_id, member.user.id)
+                    banned_users += 1
+                except Exception as e:
+                    logger.warning(f"Failed to ban {member.user.id}: {e}")
+
+        await message.reply_text(f"🚨 Banned **{banned_users}** users from this group!")
+
+    elif mode == "unban":
+        members = await client.get_chat_members(chat_id)
+        unbanned_users = 0
+
+        for member in members:
+            if member.user and not member.user.is_bot:
+                try:
+                    await client.unban_chat_member(chat_id, member.user.id)
+                    unbanned_users += 1
+                except Exception as e:
+                    logger.warning(f"Failed to unban {member.user.id}: {e}")
+
+        await message.reply_text(f"✅ Unbanned **{unbanned_users}** users from this group!")
+
+    else:
+        await message.reply_text("Usage: /bangroup ban|unban")
+
+# ➜ 3. GROUP MANAGEMENT FEATURES
+@Client.on_message(filters.new_chat_members)
+async def welcome_new_users(client, message):
+    for member in message.new_chat_members:
+        await message.reply_text(f"Welcome {member.mention}! 🎉\n\n{WELCOME_MESSAGE}")
+
+@Client.on_message(filters.command("setwelcome") & filters.group)
+async def set_welcome(client, message):
+    if len(message.command) < 2:
+        return await message.reply_text("Usage: /setwelcome <message>")
+    welcome_msg = message.text.split(" ", 1)[1]
+    await db.set_welcome_message(message.chat.id, welcome_msg)
+    await message.reply_text("✅ Welcome message updated!")
+
+# ➜ 4. BULK MESSAGE DELETION
+@Client.on_message(filters.command("cleanservice") & filters.group)
+async def clean_service(client, message):
+    if len(message.command) < 2:
+        return await message.reply_text("Usage: /cleanservice <number_of_messages>")
+    
+    num = int(message.command[1])
+    chat_id = message.chat.id
+    async for msg in client.get_chat_history(chat_id, limit=num):
+        try:
+            await msg.delete()
+        except:
+            pass
+    await message.reply_text(f"🧹 Deleted {num} messages successfully!")
+
+# ➜ 5. ANTI-SPAM & FLOOD CONTROL
+@Client.on_message(filters.text & filters.group)
+async def anti_spam(client, message):
+    bad_words = ["spamword1", "spamword2", "fakewebsite.com"]
+    if any(word in message.text.lower() for word in bad_words):
+        await message.delete()
+        await message.reply_text(f"⚠ Warning: {message.from_user.mention}, do not send spam!")
+
+@Client.on_message(filters.command("setflood") & filters.group)
+async def set_flood_control(client, message):
+    if len(message.command) < 2:
+        return await message.reply_text("Usage: /setflood <number_of_messages>")
+    
+    flood_limit = int(message.command[1])
+    db.set_flood_limit(message.chat.id, flood_limit)
+    await message.reply_text(f"✅ Flood limit set to {flood_limit} messages.")
+
+@Client.on_message(filters.text & filters.group)
+async def flood_control(client, message):
+    flood_limit = db.get_flood_limit(message.chat.id)
+    user_id = message.from_user.id
+    user_messages = db.get_recent_messages(user_id, message.chat.id)
+
+    if len(user_messages) >= flood_limit:
+        await message.delete()
+        await client.ban_chat_member(message.chat.id, user_id)
+        await message.reply_text(f"🚨 {message.from_user.mention} was banned for flooding!")
+
