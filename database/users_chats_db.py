@@ -406,3 +406,35 @@ class Database:
         banned_chats = [row[0] for row in self.cursor.fetchall()]
 
         return banned_users, banned_chats
+import sqlite3
+
+class Database:
+    def __init__(self, db_path="bot_database.db"):
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.cursor = self.conn.cursor()
+        
+        # Create tables if they do not exist
+        self.cursor.execute(
+            """CREATE TABLE IF NOT EXISTS banned_users (
+                user_id INTEGER PRIMARY KEY
+            )"""
+        )
+        self.cursor.execute(
+            """CREATE TABLE IF NOT EXISTS banned_chats (
+                chat_id INTEGER PRIMARY KEY
+            )"""
+        )
+        self.conn.commit()
+
+    async def get_banned(self):
+        """Retrieve banned users and chats from the database."""
+        self.cursor.execute("SELECT user_id FROM banned_users")
+        banned_users = [row[0] for row in self.cursor.fetchall()]
+
+        self.cursor.execute("SELECT chat_id FROM banned_chats")
+        banned_chats = [row[0] for row in self.cursor.fetchall()]
+
+        return banned_users, banned_chats
+
+# Initialize database object
+db = Database()
