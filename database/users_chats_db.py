@@ -369,3 +369,9 @@ db = Database()
 def get_warnings(user_id):
     # Example function, modify as needed
     return db.get("warnings", {}).get(user_id, 0)
+def add_warning(user_id):
+    # Example logic for warnings, modify as needed
+    warnings = db.get("warnings", {})
+    warnings[user_id] = warnings.get(user_id, 0) + 1
+    db["warnings"] = warnings
+    return warnings[user_id]
