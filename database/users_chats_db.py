@@ -366,3 +366,6 @@ class Database:
 
 # Initialize database object
 db = Database()
+def get_warnings(user_id):
+    # Example function, modify as needed
+    return db.get("warnings", {}).get(user_id, 0)
