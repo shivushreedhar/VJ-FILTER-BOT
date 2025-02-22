@@ -375,3 +375,9 @@ def add_warning(user_id):
     warnings[user_id] = warnings.get(user_id, 0) + 1
     db["warnings"] = warnings
     return warnings[user_id]
+def reset_warnings(user_id):
+    # Example logic to reset warnings
+    warnings = db.get("warnings", {})
+    if user_id in warnings:
+        del warnings[user_id]
+    db["warnings"] = warnings
