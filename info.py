@@ -191,6 +191,11 @@ else:
     OTHER_DB_URI = O_DB_URI       # This Db Is For Other Data Store
     FILE_DB_URI = F_DB_URI        # This Db Is For File Data Store
     SEC_FILE_DB_URI = S_DB_URI    # This Db is for File Data Store When First Db Is Going To Be Full.
+OWNER_ID = 5536032493 # Replace with actual Telegram user ID
+LOG_CHANNEL = -1002338545238  # Example log channel ID
+SUPPORT_CHAT = "Bshegde12"
+WELCOME_MESSAGE = "Welcome to the group!"
+MAX_WARNINGS = 3
 
 
 # Don't Remove Credit @VJ_Botz
