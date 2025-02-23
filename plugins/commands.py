@@ -1526,10 +1526,3 @@ async def request_movie(client, message):
     except Exception as e:
         await message.reply_text("❌ Failed to send your request. Please try again later.", quote=True)
         print(f"Error sending request: {e}")
-import asyncio, logging
-from pyrogram import Client, filters, enums
-from pyrogram.types import ChatPermissions
-from database.users_chats_db import db, log_user_action, get_warnings, add_warning, reset_warnings
-from info import OWNER_ID, LOG_CHANNEL, SUPPORT_CHAT, WELCOME_MESSAGE, MAX_WARNINGS
-
-logger = logging.getLogger(__name__)
