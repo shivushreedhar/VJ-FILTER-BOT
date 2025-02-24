@@ -1526,3 +1526,95 @@ async def request_movie(client, message):
     except Exception as e:
         await message.reply_text("❌ Failed to send your request. Please try again later.", quote=True)
         print(f"Error sending request: {e}")
+import re
+from textblob import TextBlob
+from pyrogram import Client, filters
+from pyrogram.types import ChatPermissions, Message
+
+# Custom Filter Lists
+BAD_WORDS = ["spam", "scam", "fake", "abuse"]  # Add your own words
+REGEX_FILTERS = [r"\b(free money|win a prize)\b", r"\d{10,}"]  # Detects spam patterns
+ADMINS = set()  # Admin user IDs (Ensure this is defined in your bot)
+
+# Function to check if a message is toxic (sentiment-based)
+def is_toxic(text):
+    analysis = TextBlob(text)
+    return analysis.sentiment.polarity < -0.5  # Negative sentiment threshold
+
+# Message Filter Function
+@Client.on_message(filters.text & ~filters.command)
+async def filter_message(client: Client, message: Message):
+    user = message.from_user
+    text = message.text.lower()
+
+    # Skip filtering for admins
+    if user.id in ADMINS:
+        return
+
+    # Check against bad words list
+    if any(word in text for word in BAD_WORDS):
+        await message.delete()
+        await message.reply_text(f"⚠️ Message deleted: Inappropriate words detected, {user.first_name}!")
+        return
+
+    # Check against regex filters
+    for pattern in REGEX_FILTERS:
+        if re.search(pattern, text):
+            await message.delete()
+            await message.reply_text(f"⚠️ Message deleted: Suspicious content detected, {user.first_name}!")
+            return
+
+    # AI-based sentiment check
+    if is_toxic(text):
+        await message.delete()
+        await message.reply_text(f"⚠️ Message deleted: Negative/toxic language detected, {user.first_name}!")
+        return
+
+# Command to add words to the filter dynamically
+@Client.on_message(filters.command("addfilter"))
+async def add_filter(client: Client, message: Message):
+    if len(message.command) < 2:
+        await message.reply_text("Usage: /addfilter <word>")
+        return
+
+    new_word = message.command[1].lower()
+    if new_word not in BAD_WORDS:
+        BAD_WORDS.append(new_word)
+        await message.reply_text(f"✅ Added '{new_word}' to the filter list.")
+
+# Command to list current filters
+@Client.on_message(filters.command("listfilters"))
+async def list_filters(client: Client, message: Message):
+    await message.reply_text(f"🔹 Current Filters: {', '.join(BAD_WORDS)}")
+
+# Command to promote users to Admin
+@Client.on_message(filters.command("addadmin"))
+async def add_admin(client: Client, message: Message):
+    if message.from_user.id not in ADMINS:
+        await message.reply_text("❌ You must be an admin to use this command.")
+        return
+
+    if not message.reply_to_message:
+        await message.reply_text("Reply to a user to promote them to admin.")
+        return
+
+    new_admin = message.reply_to_message.from_user.id
+    ADMINS.add(new_admin)
+    await message.reply_text(f"✅ {message.reply_to_message.from_user.first_name} is now an admin!")
+
+# Command to restrict users
+@Client.on_message(filters.command("restrict"))
+async def restrict_user(client: Client, message: Message):
+    if message.from_user.id not in ADMINS:
+        await message.reply_text("❌ You must be an admin to use this command.")
+        return
+
+    if not message.reply_to_message:
+        await message.reply_text("Reply to a user to restrict them.")
+        return
+
+    user_id = message.reply_to_message.from_user.id
+    chat_id = message.chat.id
+
+    await client.restrict_chat_member(chat_id, user_id, ChatPermissions(can_send_messages=False))
+    await message.reply_text(f"⛔ {message.reply_to_message.from_user.first_name} has been restricted.")
