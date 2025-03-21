@@ -1542,7 +1542,7 @@ def is_toxic(text):
     return analysis.sentiment.polarity < -0.5  # Negative sentiment threshold
 
 # Message Filter Function
-@Client.on_message(filters.text & ~filters.command)
+@Client.on_message(filters.text & ~filters.command())
 async def filter_message(client: Client, message: Message):
     user = message.from_user
     text = message.text.lower()
